@@ -1,0 +1,51 @@
+# データマスキング設定ファイル
+# オブジェクトごとにマスキングルールを定義
+
+objects:
+  - name: Account
+    fields:
+      - name: Name
+        maskingType: RANDOM_STRING
+        length: 20
+      - name: Phone
+        maskingType: PHONE
+      - name: BillingStreet
+        maskingType: ADDRESS
+
+  - name: Contact
+    fields:
+      - name: FirstName
+        maskingType: FIRST_NAME
+      - name: LastName
+        maskingType: LAST_NAME
+      - name: Email
+        maskingType: EMAIL
+      - name: Phone
+        maskingType: PHONE
+      - name: MobilePhone
+        maskingType: PHONE
+      - name: MailingStreet
+        maskingType: ADDRESS
+
+  - name: Lead
+    fields:
+      - name: FirstName
+        maskingType: FIRST_NAME
+      - name: LastName
+        maskingType: LAST_NAME
+      - name: Company
+        maskingType: COMPANY_NAME
+      - name: Email
+        maskingType: EMAIL
+      - name: Phone
+        maskingType: PHONE
+
+# マスキングタイプ:
+# - RANDOM_STRING: ランダム文字列
+# - PHONE: 電話番号形式
+# - EMAIL: メールアドレス形式
+# - FIRST_NAME: ランダムな名
+# - LAST_NAME: ランダムな姓
+# - ADDRESS: ランダムな住所
+# - COMPANY_NAME: ランダムな会社名
+# - FIXED_VALUE: 固定値（valueパラメータ必須）

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.salesforce.tools.gui.MainController"
+      spacing="10" styleClass="root">
+    
+    <padding>
+        <Insets top="15" right="15" bottom="15" left="15"/>
+    </padding>
+
+    <!-- タイトル -->
+    <Label text="Salesforce Data Masking Loader" styleClass="title"/>
+    <Separator/>
+
+    <!-- 設定ファイルセクション -->
+    <VBox spacing="10" styleClass="section">
+        <Label text="設定ファイル" styleClass="section-title"/>
+        
+        <!-- マスキング設定 -->
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="マスキング設定:" minWidth="120"/>
+            <TextField fx:id="txtMaskingConfig" HBox.hgrow="ALWAYS"/>
+            <Button text="参照..." onAction="#onBrowseMaskingConfig"/>
+            <Button text="読み込み" onAction="#onLoadMaskingConfig" styleClass="primary-button"/>
+        </HBox>
+
+        <!-- Salesforce設定 -->
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="Salesforce設定:" minWidth="120"/>
+            <TextField fx:id="txtSalesforceConfig" HBox.hgrow="ALWAYS"/>
+            <Button text="参照..." onAction="#onBrowseSalesforceConfig"/>
+        </HBox>
+    </VBox>
+
+    <Separator/>
+
+    <!-- データ投入設定セクション -->
+    <VBox spacing="10" styleClass="section">
+        <Label text="データ投入設定" styleClass="section-title"/>
+        
+        <!-- 入力CSV -->
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="入力CSVファイル:" minWidth="120"/>
+            <TextField fx:id="txtInputCsv" HBox.hgrow="ALWAYS"/>
+            <Button text="参照..." onAction="#onBrowseInputCsv"/>
+        </HBox>
+
+        <!-- オブジェクト名 -->
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="オブジェクト名:" minWidth="120"/>
+            <ComboBox fx:id="cmbObjectName" prefWidth="300"/>
+        </HBox>
+
+        <!-- 処理モード -->
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="処理モード:" minWidth="120"/>
+            <ComboBox fx:id="cmbProcessMode" prefWidth="300"/>
+        </HBox>
+
+        <!-- 外部ID項目 -->
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="外部ID項目:" minWidth="120"/>
+            <TextField fx:id="txtExternalIdField" prefWidth="300" promptText="Upsertモードの場合に指定"/>
+            <Label text="※Upsertモードの場合のみ必須" styleClass="hint"/>
+        </HBox>
+    </VBox>
+
+    <Separator/>
+
+    <!-- 実行ボタン -->
+    <HBox spacing="10" alignment="CENTER">
+        <Button fx:id="btnExecute" text="実行" onAction="#onExecute" 
+                styleClass="execute-button" prefWidth="150" prefHeight="40"/>
+    </HBox>
+
+    <!-- プログレスバー -->
+    <VBox spacing="5">
+        <Label fx:id="lblStatus" text="待機中..." styleClass="status-label"/>
+        <ProgressBar fx:id="progressBar" prefWidth="Infinity" progress="0"/>
+    </VBox>
+
+    <Separator/>
+
+    <!-- ログエリア -->
+    <VBox spacing="5" VBox.vgrow="ALWAYS" styleClass="section">
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="実行ログ" styleClass="section-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="クリア" onAction="#onClearLog" styleClass="secondary-button"/>
+        </HBox>
+        <TextArea fx:id="txtLog" editable="false" VBox.vgrow="ALWAYS" 
+                  wrapText="true" styleClass="log-area"/>
+    </VBox>
+
+</VBox>

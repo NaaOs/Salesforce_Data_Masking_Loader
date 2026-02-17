@@ -1,0 +1,170 @@
+/* ルートスタイル */
+.root {
+    -fx-background-color: #f5f5f5;
+    -fx-font-family: "Yu Gothic UI", "Meiryo", sans-serif;
+    -fx-font-size: 13px;
+}
+
+/* タイトル */
+.title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+    -fx-padding: 0 0 10 0;
+}
+
+/* セクションタイトル */
+.section-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #34495e;
+}
+
+/* セクション */
+.section {
+    -fx-background-color: white;
+    -fx-padding: 15;
+    -fx-background-radius: 5;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);
+}
+
+/* ボタンスタイル */
+.button {
+    -fx-background-color: #ecf0f1;
+    -fx-text-fill: #2c3e50;
+    -fx-font-size: 13px;
+    -fx-padding: 5 15 5 15;
+    -fx-background-radius: 3;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #bdc3c7;
+}
+
+.button:pressed {
+    -fx-background-color: #95a5a6;
+}
+
+/* プライマリボタン */
+.primary-button {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.primary-button:hover {
+    -fx-background-color: #2980b9;
+}
+
+.primary-button:pressed {
+    -fx-background-color: #21618c;
+}
+
+/* セカンダリボタン */
+.secondary-button {
+    -fx-background-color: #95a5a6;
+    -fx-text-fill: white;
+}
+
+.secondary-button:hover {
+    -fx-background-color: #7f8c8d;
+}
+
+/* 実行ボタン */
+.execute-button {
+    -fx-background-color: #27ae60;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.execute-button:hover {
+    -fx-background-color: #229954;
+}
+
+.execute-button:pressed {
+    -fx-background-color: #1e8449;
+}
+
+.execute-button:disabled {
+    -fx-background-color: #bdc3c7;
+    -fx-opacity: 0.6;
+}
+
+/* テキストフィールド */
+.text-field {
+    -fx-background-color: white;
+    -fx-border-color: #bdc3c7;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 5;
+}
+
+.text-field:focused {
+    -fx-border-color: #3498db;
+    -fx-border-width: 2;
+}
+
+/* コンボボックス */
+.combo-box {
+    -fx-background-color: white;
+    -fx-border-color: #bdc3c7;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+
+.combo-box:focused {
+    -fx-border-color: #3498db;
+    -fx-border-width: 2;
+}
+
+/* ログエリア */
+.log-area {
+    -fx-font-family: "Consolas", "Courier New", monospace;
+    -fx-font-size: 12px;
+    -fx-background-color: #2c3e50;
+    -fx-text-fill: #ecf0f1;
+    -fx-control-inner-background: #2c3e50;
+}
+
+/* プログレスバー */
+.progress-bar {
+    -fx-accent: #27ae60;
+}
+
+.progress-bar > .track {
+    -fx-background-color: #ecf0f1;
+    -fx-background-radius: 3;
+}
+
+.progress-bar > .bar {
+    -fx-background-color: #27ae60;
+    -fx-background-radius: 3;
+    -fx-padding: 3;
+}
+
+/* ステータスラベル */
+.status-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: #34495e;
+    -fx-font-weight: bold;
+}
+
+/* ヒント */
+.hint {
+    -fx-text-fill: #7f8c8d;
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+}
+
+/* セパレーター */
+.separator .line {
+    -fx-border-color: #bdc3c7;
+    -fx-border-width: 1px 0 0 0;
+}
+
+/* ラベル */
+.label {
+    -fx-text-fill: #2c3e50;
+}

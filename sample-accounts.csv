@@ -1,0 +1,4 @@
+Name,Phone,BillingStreet,BillingCity,BillingState,Industry,AnnualRevenue
+ABC Corporation,03-1234-5678,東京都渋谷区1-2-3,東京,東京都,Technology,10000000
+XYZ Inc,06-9876-5432,大阪市北区4-5-6,大阪,大阪府,Manufacturing,5000000
+Sample Company,052-111-2222,名古屋市中区7-8-9,名古屋,愛知県,Retail,3000000
