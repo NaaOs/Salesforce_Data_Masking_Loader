@@ -1,4 +1,4 @@
-# Salesforce Data Masking Loader (GUI版)
+# Salesforce Data Masking Loader
 
 DataloaderベースのSalesforceデータマスキング投入ツールです。
 YAMLファイルで定義されたマスキングルールに基づいて、CSVデータをマスキングしてSalesforceに投入します。
