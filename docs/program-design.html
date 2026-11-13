@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>プログラム設計書 - Salesforce Data Masking Loader</title>
+<style>
+:root{
+  --bg:#f7f7f5; --surface:#ffffff; --surface2:#f0f0ec; --text:#1d1d1b; --muted:#5f5f5a;
+  --border:#d9d9d3; --accent:#0b62a8; --accent-soft:#e3eef8; --warn:#9a5b00; --warn-soft:#fff3dd;
+  --bad:#a42828; --bad-soft:#fbe6e6; --ok:#1f6f3f; --ok-soft:#e2f3e8;
+  --code:#f3f3ef; --diagram-fill:#ffffff; --diagram-stroke:#4a4a45;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161615; --surface:#1f1f1d; --surface2:#2a2a27; --text:#ebebe6; --muted:#a5a59e;
+    --border:#3a3a36; --accent:#6cb2ef; --accent-soft:#1d3347; --warn:#e9b25a; --warn-soft:#3a2e17;
+    --bad:#f08a8a; --bad-soft:#3d1f1f; --ok:#7fd3a0; --ok-soft:#1c3326;
+    --code:#262624; --diagram-fill:#242422; --diagram-stroke:#b8b8b0;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161615; --surface:#1f1f1d; --surface2:#2a2a27; --text:#ebebe6; --muted:#a5a59e;
+  --border:#3a3a36; --accent:#6cb2ef; --accent-soft:#1d3347; --warn:#e9b25a; --warn-soft:#3a2e17;
+  --bad:#f08a8a; --bad-soft:#3d1f1f; --ok:#7fd3a0; --ok-soft:#1c3326;
+  --code:#262624; --diagram-fill:#242422; --diagram-stroke:#b8b8b0;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+  line-height:1.75;font-size:15px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1280px;margin:0 auto}
+nav.toc{position:sticky;top:0;height:100vh;overflow-y:auto;padding:28px 18px;border-right:1px solid var(--border)}
+nav.toc .brand{font-weight:700;font-size:14px;margin-bottom:14px}
+nav.toc ol{list-style:none;margin:0;padding:0;font-size:13px}
+nav.toc li{margin:2px 0}
+nav.toc a{color:var(--muted);text-decoration:none;display:block;padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--surface2);color:var(--text)}
+nav.toc ol ol{padding-left:12px}
+main{padding:36px 44px 80px;min-width:0}
+header.doc{border-bottom:2px solid var(--text);padding-bottom:18px;margin-bottom:28px}
+header.doc h1{margin:0 0 6px;font-size:28px;letter-spacing:.02em}
+header.doc .sub{color:var(--muted);font-size:14px}
+table.meta{margin-top:14px}
+h2{font-size:21px;margin:48px 0 14px;padding:6px 0 6px 12px;border-left:5px solid var(--accent)}
+h3{font-size:17px;margin:30px 0 10px}
+h4{font-size:15px;margin:22px 0 8px;color:var(--muted)}
+p{margin:8px 0}
+a{color:var(--accent)}
+code,pre,.mono{font-family:"SFMono-Regular",Consolas,"Menlo","Courier New",monospace;font-size:13px}
+code{background:var(--code);padding:1px 5px;border-radius:4px}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto;border:1px solid var(--border);line-height:1.55}
+pre code{background:none;padding:0}
+.table-wrap{overflow-x:auto;margin:10px 0 16px}
+table{border-collapse:collapse;width:100%;background:var(--surface);font-size:13.5px}
+th,td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2);font-weight:600;white-space:nowrap}
+td.c{text-align:center}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:14px 0}
+.class-head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;margin-bottom:6px}
+.class-head .name{font-size:17px;font-weight:700}
+.class-head .pkg{color:var(--muted);font-size:12.5px}
+.tag{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.sev{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:999px;font-weight:700;white-space:nowrap}
+.sev.high{background:var(--bad-soft);color:var(--bad)}
+.sev.mid{background:var(--warn-soft);color:var(--warn)}
+.sev.low{background:var(--ok-soft);color:var(--ok)}
+.note{border-left:4px solid var(--warn);background:var(--warn-soft);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;font-size:14px}
+figure{margin:16px 0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;overflow-x:auto}
+figcaption{font-size:12.5px;color:var(--muted);margin-top:8px;text-align:center}
+svg{display:block;margin:0 auto;max-width:100%;height:auto}
+svg text{fill:var(--text);font-family:inherit}
+svg .box{fill:var(--diagram-fill);stroke:var(--diagram-stroke);stroke-width:1.3}
+svg .box.ext{stroke-dasharray:5 3}
+svg .box.hl{fill:var(--accent-soft);stroke:var(--accent)}
+svg .ln{stroke:var(--diagram-stroke);stroke-width:1.3;fill:none}
+svg .ln.dash{stroke-dasharray:5 4}
+svg .ah{fill:var(--diagram-stroke)}
+svg .small{font-size:11px;fill:var(--muted)}
+svg .title{font-weight:700;font-size:13px}
+svg .life{stroke:var(--border);stroke-width:1.2;stroke-dasharray:4 4}
+svg .act{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1}
+ul,ol.plain{padding-left:22px;margin:6px 0}
+li{margin:2px 0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+footer{margin-top:60px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--border);padding-top:14px}
+.theme-btn{margin-top:18px;font-size:12px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer}
+@media (max-width:900px){
+  .layout{display:block}
+  nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);padding:16px}
+  main{padding:20px 16px 60px}
+  header.doc h1{font-size:22px}
+}
+@media print{
+  nav.toc{display:none}
+  .layout{display:block}
+  main{padding:0}
+  h2{break-after:avoid}
+  .card,figure{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" aria-label="目次">
+  <div class="brand">目次</div>
+  <ol>
+    <li><a href="#s1">1. 概要</a></li>
+    <li><a href="#s2">2. システム構成</a>
+      <ol>
+        <li><a href="#s2-1">2.1 技術スタック</a></li>
+        <li><a href="#s2-2">2.2 ディレクトリ構成</a></li>
+        <li><a href="#s2-3">2.3 アーキテクチャ</a></li>
+      </ol>
+    </li>
+    <li><a href="#s3">3. クラス設計</a>
+      <ol>
+        <li><a href="#s3-0">3.0 クラス一覧・クラス図</a></li>
+        <li><a href="#c-loader">DataMaskingLoader</a></li>
+        <li><a href="#c-app">DataMaskingApp</a></li>
+        <li><a href="#c-ctrl">MainController</a></li>
+        <li><a href="#c-cfgloader">ConfigLoader</a></li>
+        <li><a href="#c-csv">CsvProcessor</a></li>
+        <li><a href="#c-gen">MaskingDataGenerator</a></li>
+        <li><a href="#c-sfconn">SalesforceConnection</a></li>
+        <li><a href="#c-sfcfg">SalesforceConfig</a></li>
+        <li><a href="#c-model">モデルクラス</a></li>
+      </ol>
+    </li>
+    <li><a href="#s4">4. 処理フロー</a></li>
+    <li><a href="#s5">5. 画面設計</a></li>
+    <li><a href="#s6">6. 入出力設計</a></li>
+    <li><a href="#s7">7. マスキング仕様</a></li>
+    <li><a href="#s8">8. エラー処理・ログ</a></li>
+    <li><a href="#s9">9. 課題・改善提案</a></li>
+  </ol>
+  <button class="theme-btn" type="button" id="themeBtn">表示テーマ切替</button>
+</nav>
+
+<main>
+<header class="doc">
+  <h1>プログラム設計書</h1>
+  <div class="sub">Salesforce Data Masking Loader（data-masking-loader 1.0.0）</div>
+  <div class="table-wrap">
+  <table class="meta">
+    <tr><th>対象リポジトリ</th><td>NaaOs/Salesforce_Data_Masking_Loader</td><th>作成日</th><td>2026-11-13</td></tr>
+    <tr><th>対象リビジョン</th><td class="mono">a9821f3</td><th>作成方法</th><td>ソースコード解析によるリバースエンジニアリング</td></tr>
+    <tr><th>対象ソース</th><td colspan="3">Java 12 クラス / FXML 1 / CSS 1 / 設定ファイル 3（約 1,100 行）</td></tr>
+  </table>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<section id="s1">
+<h2>1. 概要</h2>
+<h3>1.1 目的</h3>
+<p>本プログラムは、CSV ファイルに含まれる個人情報・機密情報を YAML で定義したルールに従ってダミーデータに置き換え（マスキング）、その結果を CSV として出力する、または Salesforce の SOAP Partner API を用いて Insert / Upsert するツールである。主に検証用 Sandbox へ本番相当のデータを安全に投入する用途を想定している。</p>
+
+<h3>1.2 機能一覧</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>No</th><th>機能</th><th>概要</th><th>担当クラス</th></tr></thead>
+<tbody>
+<tr><td class="c">F01</td><td>マスキング設定読込</td><td>YAML ファイルを読み込み、オブジェクト／項目ごとのマスキングルールを生成し妥当性を検証する</td><td>ConfigLoader</td></tr>
+<tr><td class="c">F02</td><td>CSV 読込・マスキング</td><td>CSV を 1 行ずつ読み込み、設定対象項目をダミー値に置換する</td><td>CsvProcessor / MaskingDataGenerator</td></tr>
+<tr><td class="c">F03</td><td>マスキング済み CSV 出力（mask-only）</td><td>マスキング結果を <code>{オブジェクト名}_masked_{エポックミリ秒}.csv</code> に出力する</td><td>CsvProcessor</td></tr>
+<tr><td class="c">F04</td><td>Salesforce Insert（mask-insert）</td><td>マスキング結果をバッチ単位で <code>create()</code> する</td><td>SalesforceConnection</td></tr>
+<tr><td class="c">F05</td><td>Salesforce Upsert（mask-upsert）</td><td>外部 ID 項目をキーにバッチ単位で <code>upsert()</code> する</td><td>SalesforceConnection</td></tr>
+<tr><td class="c">F06</td><td>CLI 実行</td><td>コマンドライン引数で処理モード・オブジェクト・CSV を指定して一括実行する</td><td>DataMaskingLoader</td></tr>
+<tr><td class="c">F07</td><td>GUI 実行</td><td>JavaFX 画面で設定ファイル・CSV を選択し、非同期で処理・進捗表示・ログ表示を行う</td><td>DataMaskingApp / MainController</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>1.3 処理モード</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>モード</th><th>Salesforce 接続</th><th>出力</th><th>外部 ID</th></tr></thead>
+<tbody>
+<tr><td><code>mask-only</code></td><td>なし</td><td>カレントディレクトリに CSV 出力</td><td>不要</td></tr>
+<tr><td><code>mask-insert</code></td><td>あり</td><td>Salesforce に新規作成</td><td>不要</td></tr>
+<tr><td><code>mask-upsert</code></td><td>あり</td><td>Salesforce に作成または更新</td><td>CLI: 省略時 <code>Id</code> ／ GUI: 必須</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s2">
+<h2>2. システム構成</h2>
+
+<h3 id="s2-1">2.1 技術スタック</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>区分</th><th>ライブラリ / 技術</th><th>バージョン</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td>言語</td><td>Java</td><td>source/target 11（※ 9.1 参照）</td><td>実装言語</td></tr>
+<tr><td>ビルド</td><td>Maven（compiler 3.11.0 / assembly 3.6.0 / javafx-maven-plugin 0.0.8）</td><td>-</td><td>ビルド、依存込み JAR 生成、GUI 起動</td></tr>
+<tr><td>Salesforce</td><td>force-wsc / force-partner-api</td><td>58.0.0</td><td>SOAP Partner API による認証・データ操作</td></tr>
+<tr><td>設定</td><td>SnakeYAML</td><td>2.2</td><td>マスキング設定 YAML の読込</td></tr>
+<tr><td>CSV</td><td>OpenCSV</td><td>5.8</td><td>CSV 読み書き</td></tr>
+<tr><td>ダミーデータ</td><td>JavaFaker</td><td>1.0.2</td><td>氏名・住所・会社名・メール・日付の生成（Locale.JAPAN）</td></tr>
+<tr><td>ユーティリティ</td><td>Apache Commons Lang3</td><td>3.18.0</td><td>英数字ランダム文字列生成</td></tr>
+<tr><td>ログ</td><td>SLF4J / Logback</td><td>2.0.9 / 1.4.12</td><td>コンソール・日次ローテーションファイル出力</td></tr>
+<tr><td>GUI</td><td>JavaFX（controls / fxml）</td><td>21</td><td>デスクトップ GUI</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s2-2">2.2 ディレクトリ構成</h3>
+<pre><code>Salesforce_Data_Masking_Loader/
+├── pom.xml                         Maven 定義（JAR の Main-Class は GUI）
+├── masking-config.yml              マスキング設定（サンプル）
+├── salesforce_sample.properties    Salesforce 接続設定のひな形 → salesforce.properties として使用
+├── sample-accounts.csv             入力 CSV サンプル
+├── run-gui.sh / run-gui.bat        ビルド・GUI 起動スクリプト
+└── src/main/
+    ├── java/com/salesforce/tools/
+    │   ├── DataMaskingLoader.java          CLI エントリポイント
+    │   ├── config/ConfigLoader.java        YAML 読込・検証
+    │   ├── csv/CsvProcessor.java           CSV 読み書き・マスキング適用
+    │   ├── masking/MaskingDataGenerator.java  ダミー値生成
+    │   ├── model/                          設定モデル（MaskingConfig / ObjectConfig / FieldConfig / MaskingType）
+    │   ├── salesforce/                     接続設定・API 呼び出し（SalesforceConfig / SalesforceConnection）
+    │   └── gui/                            JavaFX（DataMaskingApp / MainController）
+    └── resources/
+        ├── fxml/main.fxml                  画面レイアウト
+        ├── css/style.css                   画面スタイル
+        └── logback.xml                     ログ設定</code></pre>
+
+<h3 id="s2-3">2.3 アーキテクチャ</h3>
+<p>プレゼンテーション層（CLI / GUI）が、設定・CSV・マスキング・Salesforce の各サービスクラスを直接呼び出す単純な層構造である。DI コンテナやインタフェースによる抽象化はなく、各クラスは <code>new</code> により生成される。</p>
+<figure>
+<svg viewBox="0 0 860 420" width="860" role="img" aria-label="レイヤー構成図">
+  <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs>
+  <text x="14" y="30" class="small">プレゼンテーション層</text>
+  <rect x="150" y="10" width="250" height="56" rx="8" class="box hl"/>
+  <text x="275" y="34" text-anchor="middle" class="title">DataMaskingLoader</text>
+  <text x="275" y="52" text-anchor="middle" class="small">CLI（main）</text>
+  <rect x="460" y="10" width="250" height="56" rx="8" class="box hl"/>
+  <text x="585" y="34" text-anchor="middle" class="title">DataMaskingApp / MainController</text>
+  <text x="585" y="52" text-anchor="middle" class="small">GUI（JavaFX + main.fxml）</text>
+
+  <text x="14" y="150" class="small">サービス層</text>
+  <rect x="110" y="120" width="170" height="56" rx="8" class="box"/>
+  <text x="195" y="144" text-anchor="middle" class="title">ConfigLoader</text>
+  <text x="195" y="162" text-anchor="middle" class="small">YAML 読込・検証</text>
+  <rect x="330" y="120" width="170" height="56" rx="8" class="box"/>
+  <text x="415" y="144" text-anchor="middle" class="title">CsvProcessor</text>
+  <text x="415" y="162" text-anchor="middle" class="small">CSV 入出力</text>
+  <rect x="580" y="120" width="190" height="56" rx="8" class="box"/>
+  <text x="675" y="144" text-anchor="middle" class="title">SalesforceConnection</text>
+  <text x="675" y="162" text-anchor="middle" class="small">Insert / Upsert</text>
+  <rect x="330" y="220" width="170" height="56" rx="8" class="box"/>
+  <text x="415" y="244" text-anchor="middle" class="title">MaskingDataGenerator</text>
+  <text x="415" y="262" text-anchor="middle" class="small">ダミー値生成</text>
+
+  <text x="14" y="250" class="small">モデル</text>
+  <rect x="80" y="220" width="220" height="56" rx="8" class="box"/>
+  <text x="190" y="244" text-anchor="middle" class="title">MaskingConfig ほか</text>
+  <text x="190" y="262" text-anchor="middle" class="small">ObjectConfig / FieldConfig / MaskingType</text>
+  <rect x="580" y="220" width="190" height="56" rx="8" class="box"/>
+  <text x="675" y="244" text-anchor="middle" class="title">SalesforceConfig</text>
+  <text x="675" y="262" text-anchor="middle" class="small">接続情報</text>
+
+  <text x="14" y="365" class="small">外部リソース</text>
+  <rect x="100" y="335" width="180" height="56" rx="8" class="box ext"/>
+  <text x="190" y="359" text-anchor="middle" class="title">masking-config.yml</text>
+  <text x="190" y="377" text-anchor="middle" class="small">マスキング設定</text>
+  <rect x="330" y="335" width="170" height="56" rx="8" class="box ext"/>
+  <text x="415" y="359" text-anchor="middle" class="title">入力 / 出力 CSV</text>
+  <text x="415" y="377" text-anchor="middle" class="small">ローカルファイル</text>
+  <rect x="540" y="335" width="130" height="56" rx="8" class="box ext"/>
+  <text x="605" y="359" text-anchor="middle" class="title">salesforce</text>
+  <text x="605" y="377" text-anchor="middle" class="small">.properties</text>
+  <rect x="690" y="335" width="150" height="56" rx="8" class="box ext"/>
+  <text x="765" y="359" text-anchor="middle" class="title">Salesforce 組織</text>
+  <text x="765" y="377" text-anchor="middle" class="small">SOAP API v58.0</text>
+
+  <path d="M240,66 L200,120" class="ln" marker-end="url(#a1)"/>
+  <path d="M290,66 L400,120" class="ln" marker-end="url(#a1)"/>
+  <path d="M330,66 L640,120" class="ln" marker-end="url(#a1)"/>
+  <path d="M530,66 L230,120" class="ln dash" marker-end="url(#a1)"/>
+  <path d="M570,66 L440,120" class="ln dash" marker-end="url(#a1)"/>
+  <path d="M620,66 L670,120" class="ln dash" marker-end="url(#a1)"/>
+  <path d="M415,176 L415,220" class="ln" marker-end="url(#a1)"/>
+  <path d="M195,176 L192,220" class="ln" marker-end="url(#a1)"/>
+  <path d="M675,176 L675,220" class="ln" marker-end="url(#a1)"/>
+  <path d="M150,176 L150,335" class="ln dash" marker-end="url(#a1)"/>
+  <path d="M415,176 C 520,200 520,300 440,335" class="ln dash" marker-end="url(#a1)"/>
+  <path d="M640,276 L610,335" class="ln dash" marker-end="url(#a1)"/>
+  <path d="M740,176 C 800,220 800,300 770,335" class="ln" marker-end="url(#a1)"/>
+</svg>
+<figcaption>図1 レイヤー構成（実線: CLI からの呼出・API 通信、破線: GUI からの呼出・ファイル入出力）</figcaption>
+</figure>
+<p>エントリポイントは 2 つ存在する。</p>
+<ul>
+  <li><b>GUI</b>: <code>com.salesforce.tools.gui.DataMaskingApp</code>（pom.xml の Main-Class / javafx-maven-plugin の mainClass）</li>
+  <li><b>CLI</b>: <code>com.salesforce.tools.DataMaskingLoader</code>（<code>java -cp &lt;jar&gt; com.salesforce.tools.DataMaskingLoader ...</code> で起動）</li>
+</ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="s3">
+<h2>3. クラス設計</h2>
+
+<h3 id="s3-0">3.0 クラス一覧・クラス図</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>パッケージ</th><th>クラス</th><th>種別</th><th>責務</th></tr></thead>
+<tbody>
+<tr><td>com.salesforce.tools</td><td>DataMaskingLoader</td><td>class（static）</td><td>CLI エントリポイント、処理モード振り分け</td></tr>
+<tr><td rowspan="2">…gui</td><td>DataMaskingApp</td><td>Application</td><td>JavaFX 起動、FXML / CSS のロード</td></tr>
+<tr><td>MainController</td><td>FXML Controller</td><td>画面イベント処理、入力検証、非同期実行</td></tr>
+<tr><td>…config</td><td>ConfigLoader</td><td>class（static）</td><td>YAML → MaskingConfig 変換と妥当性検証</td></tr>
+<tr><td>…csv</td><td>CsvProcessor</td><td>class</td><td>CSV 読込・マスキング適用・CSV 出力</td></tr>
+<tr><td>…masking</td><td>MaskingDataGenerator</td><td>class</td><td>MaskingType ごとのダミー値生成</td></tr>
+<tr><td rowspan="2">…salesforce</td><td>SalesforceConnection</td><td>class</td><td>ログイン、SObject 変換、バッチ Insert / Upsert</td></tr>
+<tr><td>SalesforceConfig</td><td>POJO</td><td>接続情報・バッチサイズ保持</td></tr>
+<tr><td rowspan="4">…model</td><td>MaskingConfig</td><td>POJO</td><td>設定ルート（ObjectConfig のリスト）</td></tr>
+<tr><td>ObjectConfig</td><td>POJO</td><td>オブジェクト単位の設定（FieldConfig のリスト）</td></tr>
+<tr><td>FieldConfig</td><td>POJO</td><td>項目単位の設定（名称・タイプ・長さ・固定値）</td></tr>
+<tr><td>MaskingType</td><td>enum</td><td>マスキング種別（10 種）</td></tr>
+</tbody>
+</table>
+</div>
+
+<figure>
+<svg viewBox="0 0 900 470" width="900" role="img" aria-label="クラス図">
+  <defs>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10" class="ln"/></marker>
+    <marker id="dia" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="9" orient="auto"><path d="M1,5 L7,1 L13,5 L7,9 z" class="ah"/></marker>
+  </defs>
+  <!-- MaskingConfig -->
+  <rect x="20" y="20" width="230" height="92" rx="4" class="box"/>
+  <text x="135" y="40" text-anchor="middle" class="title">MaskingConfig</text>
+  <line x1="20" y1="48" x2="250" y2="48" class="ln"/>
+  <text x="30" y="66" class="small">- objects: List&lt;ObjectConfig&gt;</text>
+  <line x1="20" y1="74" x2="250" y2="74" class="ln"/>
+  <text x="30" y="94" class="small">+ getObjectConfig(name): ObjectConfig</text>
+  <!-- ObjectConfig -->
+  <rect x="20" y="160" width="230" height="110" rx="4" class="box"/>
+  <text x="135" y="180" text-anchor="middle" class="title">ObjectConfig</text>
+  <line x1="20" y1="188" x2="250" y2="188" class="ln"/>
+  <text x="30" y="206" class="small">- name: String</text>
+  <text x="30" y="222" class="small">- fields: List&lt;FieldConfig&gt;</text>
+  <line x1="20" y1="230" x2="250" y2="230" class="ln"/>
+  <text x="30" y="248" class="small">+ getFieldConfig(name): FieldConfig</text>
+  <text x="30" y="263" class="small">+ getMaskingFieldNames(): List</text>
+  <!-- FieldConfig -->
+  <rect x="20" y="318" width="230" height="110" rx="4" class="box"/>
+  <text x="135" y="338" text-anchor="middle" class="title">FieldConfig</text>
+  <line x1="20" y1="346" x2="250" y2="346" class="ln"/>
+  <text x="30" y="364" class="small">- name: String</text>
+  <text x="30" y="380" class="small">- maskingType: MaskingType</text>
+  <text x="30" y="396" class="small">- length: Integer</text>
+  <text x="30" y="412" class="small">- value: String</text>
+  <!-- MaskingType -->
+  <rect x="300" y="350" width="170" height="78" rx="4" class="box"/>
+  <text x="385" y="370" text-anchor="middle" class="small">«enumeration»</text>
+  <text x="385" y="386" text-anchor="middle" class="title">MaskingType</text>
+  <text x="385" y="408" text-anchor="middle" class="small">RANDOM_STRING, PHONE …</text>
+  <!-- ConfigLoader -->
+  <rect x="300" y="20" width="220" height="76" rx="4" class="box"/>
+  <text x="410" y="40" text-anchor="middle" class="title">ConfigLoader</text>
+  <line x1="300" y1="48" x2="520" y2="48" class="ln"/>
+  <text x="310" y="66" class="small">+ loadConfig(path) «static»</text>
+  <text x="310" y="84" class="small">+ validateConfig(cfg) «static»</text>
+  <!-- CsvProcessor -->
+  <rect x="300" y="160" width="220" height="110" rx="4" class="box"/>
+  <text x="410" y="180" text-anchor="middle" class="title">CsvProcessor</text>
+  <line x1="300" y1="188" x2="520" y2="188" class="ln"/>
+  <text x="310" y="206" class="small">- maskingGenerator</text>
+  <line x1="300" y1="214" x2="520" y2="214" class="ln"/>
+  <text x="310" y="232" class="small">+ readAndMaskCsv(path, objCfg)</text>
+  <text x="310" y="248" class="small">+ writeMaskedCsv(path, records)</text>
+  <text x="310" y="264" class="small">+ readCsv(path)</text>
+  <!-- MaskingDataGenerator -->
+  <rect x="560" y="318" width="210" height="92" rx="4" class="box"/>
+  <text x="665" y="338" text-anchor="middle" class="title">MaskingDataGenerator</text>
+  <line x1="560" y1="346" x2="770" y2="346" class="ln"/>
+  <text x="570" y="364" class="small">- faker: Faker(JAPAN)</text>
+  <text x="570" y="380" class="small">- random: Random</text>
+  <line x1="560" y1="388" x2="770" y2="388" class="ln"/>
+  <text x="570" y="404" class="small">+ generateMaskedValue(fieldCfg)</text>
+  <!-- SalesforceConnection -->
+  <rect x="580" y="140" width="300" height="130" rx="4" class="box"/>
+  <text x="730" y="160" text-anchor="middle" class="title">SalesforceConnection</text>
+  <line x1="580" y1="168" x2="880" y2="168" class="ln"/>
+  <text x="590" y="186" class="small">- connection: PartnerConnection</text>
+  <text x="590" y="202" class="small">- config: SalesforceConfig</text>
+  <line x1="580" y1="210" x2="880" y2="210" class="ln"/>
+  <text x="590" y="228" class="small">+ connect() / disconnect()</text>
+  <text x="590" y="244" class="small">+ insertRecords(obj, records)</text>
+  <text x="590" y="260" class="small">+ upsertRecords(obj, records, extId)</text>
+  <!-- SalesforceConfig -->
+  <rect x="640" y="20" width="240" height="76" rx="4" class="box"/>
+  <text x="760" y="40" text-anchor="middle" class="title">SalesforceConfig</text>
+  <line x1="640" y1="48" x2="880" y2="48" class="ln"/>
+  <text x="650" y="66" class="small">username, password, securityToken</text>
+  <text x="650" y="84" class="small">loginUrl, batchSize</text>
+
+  <!-- relations -->
+  <polygon points="135,112 141,121 135,130 129,121" class="ah"/><path d="M135,130 L135,160" class="ln"/>
+  <text x="142" y="152" class="small">1..*</text>
+  <polygon points="135,270 141,279 135,288 129,279" class="ah"/><path d="M135,288 L135,318" class="ln"/>
+  <text x="142" y="310" class="small">1..*</text>
+  <path d="M250,390 L300,390" class="ln" marker-end="url(#a2)"/>
+  <path d="M300,58 L250,58" class="ln dash" marker-end="url(#a2)"/>
+  <text x="256" y="52" class="small">生成</text>
+  <polygon points="470,270 476,279 470,288 464,279" class="ah"/><path d="M470,288 L470,300 L620,300 L620,318" class="ln"/>
+  <path d="M300,215 L250,215" class="ln dash" marker-end="url(#a2)"/>
+  <polygon points="760,140 766,131 760,122 754,131" class="ah"/><path d="M760,122 L760,96" class="ln"/>
+  <path d="M665,410 L665,440 L385,440 L385,428" class="ln dash" marker-end="url(#a2)"/>
+</svg>
+<figcaption>図2 主要クラス図（◆: 保持／集約、破線矢印: 依存）。DataMaskingLoader / MainController は ConfigLoader・CsvProcessor・SalesforceConnection に依存する。</figcaption>
+</figure>
+
+<!-- DataMaskingLoader -->
+<div class="card" id="c-loader">
+  <div class="class-head"><span class="name">DataMaskingLoader</span><span class="pkg">com.salesforce.tools</span><span class="tag">CLI</span></div>
+  <p>CLI のメインクラス。設定ファイル名はカレントディレクトリ基準の定数で固定される。</p>
+  <h4>定数</h4>
+  <div class="table-wrap"><table>
+    <tr><th>名前</th><th>値</th><th>説明</th></tr>
+    <tr><td>CONFIG_FILE</td><td><code>masking-config.yml</code></td><td>マスキング設定ファイル</td></tr>
+    <tr><td>SF_CONFIG_FILE</td><td><code>salesforce.properties</code></td><td>Salesforce 接続設定ファイル</td></tr>
+  </table></div>
+  <h4>メソッド</h4>
+  <div class="table-wrap"><table>
+    <tr><th>シグネチャ</th><th>処理内容</th></tr>
+    <tr><td class="mono">public static void main(String[] args)</td><td>
+      <ol class="plain">
+        <li>引数が 3 個未満なら使い方を表示し終了コード 1</li>
+        <li><code>ConfigLoader.loadConfig</code> → <code>validateConfig</code>。NG なら終了コード 1</li>
+        <li><code>getObjectConfig(args[1])</code> が null なら終了コード 1</li>
+        <li><code>CsvProcessor.readAndMaskCsv(args[2], objectConfig)</code>。0 件なら終了コード 0</li>
+        <li><code>args[0]</code>（小文字化）で分岐: mask-only / mask-insert / mask-upsert（外部 ID は <code>args[3]</code>、省略時 <code>"Id"</code>）。不明モードは終了コード 1</li>
+        <li>例外は全て捕捉し ERROR ログ出力後、終了コード 1</li>
+      </ol></td></tr>
+    <tr><td class="mono">private static void executeMaskOnly(CsvProcessor, List&lt;Map&gt;, String)</td><td>出力ファイル名 <code>{objectName}_masked_{currentTimeMillis}.csv</code> で <code>writeMaskedCsv</code> を呼ぶ</td></tr>
+    <tr><td class="mono">private static void executeMaskInsert(List&lt;Map&gt;, String)</td><td>接続設定読込 → connect → insertRecords → finally で disconnect</td></tr>
+    <tr><td class="mono">private static void executeMaskUpsert(List&lt;Map&gt;, String, String)</td><td>接続設定読込 → connect → upsertRecords → finally で disconnect</td></tr>
+    <tr><td class="mono">private static SalesforceConfig loadSalesforceConfig()</td><td>properties を読み込み SalesforceConfig を生成（キー仕様は <a href="#s6-3">6.3</a>）</td></tr>
+    <tr><td class="mono">private static void printUsage()</td><td>標準出力に使い方を表示</td></tr>
+  </table></div>
+  <h4>終了コード</h4>
+  <div class="table-wrap"><table>
+    <tr><th>コード</th><th>条件</th></tr>
+    <tr><td class="c">0</td><td>正常終了／処理対象レコード 0 件</td></tr>
+    <tr><td class="c">1</td><td>引数不足、設定検証 NG、オブジェクト設定なし、不明モード、例外発生</td></tr>
+  </table></div>
+</div>
+
+<!-- DataMaskingApp -->
+<div class="card" id="c-app">
+  <div class="class-head"><span class="name">DataMaskingApp</span><span class="pkg">com.salesforce.tools.gui</span><span class="tag">GUI</span></div>
+  <p><code>javafx.application.Application</code> を継承。<code>start()</code> で <code>/fxml/main.fxml</code> をロードし、900×700 の Scene に <code>/css/style.css</code> を適用、タイトル「Salesforce Data Masking Loader」、最小サイズ 800×600 で表示する。起動失敗時は ERROR ログとスタックトレースを出力する（ダイアログ表示なし）。</p>
+</div>
+
+<!-- MainController -->
+<div class="card" id="c-ctrl">
+  <div class="class-head"><span class="name">MainController</span><span class="pkg">com.salesforce.tools.gui</span><span class="tag">GUI</span></div>
+  <p>main.fxml のコントローラ。画面項目は <a href="#s5">5. 画面設計</a> を参照。</p>
+  <h4>フィールド</h4>
+  <div class="table-wrap"><table>
+    <tr><th>名前</th><th>型</th><th>説明</th></tr>
+    <tr><td>maskingConfig</td><td>MaskingConfig</td><td>読込済みマスキング設定（未読込時 null）</td></tr>
+    <tr><td>currentCsvFile</td><td>File</td><td>参照ボタンで選択した CSV（保持のみで未使用）</td></tr>
+  </table></div>
+  <h4>メソッド</h4>
+  <div class="table-wrap"><table>
+    <tr><th>メソッド</th><th>トリガ</th><th>処理内容</th></tr>
+    <tr><td class="mono">initialize()</td><td>FXML ロード時</td><td>処理モード選択肢 3 件を設定し先頭選択、Upsert 以外では外部 ID 欄を無効化するリスナ登録、設定ファイルパスの既定値（<code>masking-config.yml</code> / <code>salesforce.properties</code>）設定。<b>マスキング設定の自動読込は行わない</b></td></tr>
+    <tr><td class="mono">onBrowseMaskingConfig()</td><td>マスキング設定「参照...」</td><td>*.yml / *.yaml を選択 → パス設定 → 即時 <code>loadMaskingConfig()</code></td></tr>
+    <tr><td class="mono">onBrowseSalesforceConfig()</td><td>Salesforce 設定「参照...」</td><td>*.properties を選択しパス設定（読込は実行時）</td></tr>
+    <tr><td class="mono">onBrowseInputCsv()</td><td>入力 CSV「参照...」</td><td>*.csv を選択しパス設定</td></tr>
+    <tr><td class="mono">onLoadMaskingConfig()</td><td>「読み込み」</td><td><code>loadMaskingConfig()</code> を呼ぶ</td></tr>
+    <tr><td class="mono">loadMaskingConfig()</td><td>-</td><td>YAML 読込・検証。OK ならオブジェクト名コンボを更新し先頭選択、情報ダイアログ表示。NG／例外はエラーダイアログ</td></tr>
+    <tr><td class="mono">onExecute()</td><td>「実行」</td><td>入力チェック（下表）後、<code>executeAsync()</code></td></tr>
+    <tr><td class="mono">executeAsync()</td><td>-</td><td><code>Task&lt;Void&gt;</code> を生成し新規スレッドで実行。進捗バー・ステータスラベルを Task にバインド、メッセージ変更をログへ追記、実行ボタンを無効化。succeeded / failed で実行ボタン再有効化とダイアログ表示</td></tr>
+    <tr><td class="mono">executeMaskOnly / executeMaskInsert / executeMaskUpsert</td><td>-</td><td>CLI と同等処理。ログ追記を <code>Platform.runLater</code> で行う</td></tr>
+    <tr><td class="mono">loadSalesforceConfig()</td><td>-</td><td>画面で指定されたパスの properties を読込（CLI と同一ロジック）</td></tr>
+    <tr><td class="mono">onClearLog()</td><td>「クリア」</td><td>ログエリアをクリア</td></tr>
+    <tr><td class="mono">appendLog / showError / showInfo</td><td>-</td><td><code>yyyy-MM-dd HH:mm:ss - msg</code> 形式でログ追記／モーダルダイアログ表示＋ログ追記（UI スレッドで実行）</td></tr>
+  </table></div>
+  <h4>実行時入力チェック（onExecute）</h4>
+  <div class="table-wrap"><table>
+    <tr><th>順</th><th>条件</th><th>エラーメッセージ</th></tr>
+    <tr><td class="c">1</td><td>maskingConfig が null</td><td>マスキング設定を読み込んでください</td></tr>
+    <tr><td class="c">2</td><td>オブジェクト名未選択</td><td>オブジェクト名を選択してください</td></tr>
+    <tr><td class="c">3</td><td>入力 CSV 未指定</td><td>入力CSVファイルを選択してください</td></tr>
+    <tr><td class="c">4</td><td>処理モード未選択</td><td>処理モードを選択してください</td></tr>
+    <tr><td class="c">5</td><td>Upsert かつ外部 ID 未入力</td><td>Upsertモードでは外部ID項目の指定が必須です</td></tr>
+  </table></div>
+  <h4>進捗率の遷移</h4>
+  <p>0%「処理開始...」→ 10%「CSVファイル読み込み中...」→ 50%「n 件のレコードをマスキング完了」→ 100%「処理完了」。0 件時は「処理対象のレコードがありません」で終了（成功扱い）。</p>
+</div>
+
+<!-- ConfigLoader -->
+<div class="card" id="c-cfgloader">
+  <div class="class-head"><span class="name">ConfigLoader</span><span class="pkg">com.salesforce.tools.config</span></div>
+  <div class="table-wrap"><table>
+    <tr><th>シグネチャ</th><th>処理内容</th></tr>
+    <tr><td class="mono">public static MaskingConfig loadConfig(String configFilePath) throws FileNotFoundException</td><td>
+      <ol class="plain">
+        <li>FileInputStream でファイルを開く</li>
+        <li>リフレクションで SnakeYAML 2.x 方式 <code>new Constructor(MaskingConfig.class, new LoaderOptions())</code> を試行</li>
+        <li>失敗時 1.x 方式 <code>new Constructor(MaskingConfig.class)</code>、さらに失敗時 <code>new Yaml()</code> にフォールバック</li>
+        <li><code>yaml.load()</code> で MaskingConfig にマッピングし、オブジェクト数を INFO ログ出力</li>
+      </ol></td></tr>
+    <tr><td class="mono">public static boolean validateConfig(MaskingConfig config)</td><td>
+      以下を検査し、NG は ERROR ログ出力して false。
+      <ul>
+        <li>config / objects が null または空 → NG</li>
+        <li>オブジェクト名が null または空 → NG</li>
+        <li>fields が null または空 → WARN のみ（継続）</li>
+        <li>項目名が null または空 → NG</li>
+        <li>maskingType が null → NG</li>
+      </ul>
+      ※ FIXED_VALUE の value 未設定、length の値域は検査しない</td></tr>
+  </table></div>
+</div>
+
+<!-- CsvProcessor -->
+<div class="card" id="c-csv">
+  <div class="class-head"><span class="name">CsvProcessor</span><span class="pkg">com.salesforce.tools.csv</span></div>
+  <p>コンストラクタで MaskingDataGenerator を 1 つ生成して保持する。レコードは <code>Map&lt;String, Object&gt;</code>（実体は HashMap）で表現する。</p>
+  <div class="table-wrap"><table>
+    <tr><th>シグネチャ</th><th>処理内容</th></tr>
+    <tr><td class="mono">public List&lt;Map&lt;String,Object&gt;&gt; readAndMaskCsv(String inputCsvPath, ObjectConfig objectConfig) throws IOException</td><td>
+      <ol class="plain">
+        <li>1 行目をヘッダーとして読込（null なら空リストを返す）</li>
+        <li>データ行ごとに、ヘッダーの各列（前後空白 trim）について <code>objectConfig.getFieldConfig(列名)</code> を検索</li>
+        <li>設定ありの列は <code>generateMaskedValue()</code> の値で置換（元値は参照しない）、設定なしの列は元値のまま格納。列不足は空文字</li>
+        <li>1,000 件ごとに進捗 INFO ログ</li>
+        <li><code>CsvValidationException</code> は <code>IOException("CSVフォーマットエラー")</code> に変換</li>
+      </ol></td></tr>
+    <tr><td class="mono">public void writeMaskedCsv(String outputCsvPath, List&lt;Map&lt;String,Object&gt;&gt; records) throws IOException</td><td>先頭レコードの keySet をヘッダーとして出力し、各レコードの値を文字列化（null は空文字）して出力。0 件時は WARN を出して何もしない</td></tr>
+    <tr><td class="mono">public List&lt;Map&lt;String,Object&gt;&gt; readCsv(String csvPath) throws IOException</td><td>マスキングなしで CSV を読み込む（現状どこからも呼ばれていない）</td></tr>
+  </table></div>
+</div>
+
+<!-- MaskingDataGenerator -->
+<div class="card" id="c-gen">
+  <div class="class-head"><span class="name">MaskingDataGenerator</span><span class="pkg">com.salesforce.tools.masking</span></div>
+  <p><code>Faker(Locale.JAPAN)</code> と <code>java.util.Random</code> を保持し、<code>generateMaskedValue(FieldConfig)</code> で MaskingType に応じた値を返す。fieldConfig または maskingType が null の場合、および生成中に例外が発生した場合は null を返す（例外は ERROR ログのみ）。各タイプの生成ロジックは <a href="#s7">7. マスキング仕様</a> を参照。</p>
+</div>
+
+<!-- SalesforceConnection -->
+<div class="card" id="c-sfconn">
+  <div class="class-head"><span class="name">SalesforceConnection</span><span class="pkg">com.salesforce.tools.salesforce</span></div>
+  <div class="table-wrap"><table>
+    <tr><th>シグネチャ</th><th>処理内容</th></tr>
+    <tr><td class="mono">public void connect() throws ConnectionException</td><td>ConnectorConfig にユーザ名、パスワード＋トークン、認証エンドポイント（loginUrl）を設定し <code>Connector.newConnection()</code> でログイン。ログインユーザのフルネームを INFO ログ出力</td></tr>
+    <tr><td class="mono">public List&lt;SaveResult&gt; insertRecords(String objectName, List&lt;Map&gt; records) throws ConnectionException</td><td rowspan="2">
+      <ol class="plain">
+        <li>レコードが空なら WARN を出して空リストを返す</li>
+        <li><code>batchSize</code> 件ずつ <code>subList</code> で分割</li>
+        <li>各レコードを <code>createSObject()</code> で SObject に変換</li>
+        <li><code>connection.create(sObjects)</code> または <code>connection.upsert(externalIdField, sObjects)</code> を呼出</li>
+        <li>結果ごとに成功／失敗を集計、失敗時はエラーメッセージを ERROR ログ。バッチ単位で件数を INFO ログ</li>
+        <li><code>ConnectionException</code> はログ出力後に再スロー（以降のバッチは処理しない）</li>
+      </ol>
+      レコード単位の失敗は例外とせず、結果リストに含めて返す</td></tr>
+    <tr><td class="mono">public List&lt;UpsertResult&gt; upsertRecords(String objectName, List&lt;Map&gt; records, String externalIdField) throws ConnectionException</td></tr>
+    <tr><td class="mono">private SObject createSObject(String objectName, Map&lt;String,Object&gt; fieldMap)</td><td>type を設定し、値が null でない項目のみ <code>setField</code>（空文字はそのまま設定される）</td></tr>
+    <tr><td class="mono">public void disconnect()</td><td>connection 参照を null にする（<code>logout()</code> は呼ばない）</td></tr>
+    <tr><td class="mono">public PartnerConnection getConnection()</td><td>内部接続を返す</td></tr>
+  </table></div>
+</div>
+
+<!-- SalesforceConfig -->
+<div class="card" id="c-sfcfg">
+  <div class="class-head"><span class="name">SalesforceConfig</span><span class="pkg">com.salesforce.tools.salesforce</span></div>
+  <div class="table-wrap"><table>
+    <tr><th>フィールド</th><th>型</th><th>既定値</th><th>説明</th></tr>
+    <tr><td>username</td><td>String</td><td>-</td><td>ログインユーザ名</td></tr>
+    <tr><td>password</td><td>String</td><td>-</td><td>パスワード</td></tr>
+    <tr><td>securityToken</td><td>String</td><td>-</td><td>セキュリティトークン</td></tr>
+    <tr><td>loginUrl</td><td>String</td><td><code>https://login.salesforce.com/services/Soap/u/58.0</code></td><td>認証エンドポイント</td></tr>
+    <tr><td>batchSize</td><td>int</td><td>200</td><td>1 回の API 呼出あたりのレコード数</td></tr>
+  </table></div>
+  <p><code>getPasswordWithToken()</code>: securityToken が空でなければ <code>password + securityToken</code>、空なら password を返す。</p>
+</div>
+
+<!-- Model -->
+<div class="card" id="c-model">
+  <div class="class-head"><span class="name">モデルクラス</span><span class="pkg">com.salesforce.tools.model</span></div>
+  <p>SnakeYAML の JavaBean マッピング対象。YAML のキー名と setter 名が一致する必要がある。</p>
+  <div class="table-wrap"><table>
+    <tr><th>クラス</th><th>プロパティ</th><th>補助メソッド</th></tr>
+    <tr><td>MaskingConfig</td><td>objects: List&lt;ObjectConfig&gt;</td><td><code>getObjectConfig(name)</code>: name 完全一致（大文字小文字区別）の先頭要素、なければ null</td></tr>
+    <tr><td>ObjectConfig</td><td>name: String, fields: List&lt;FieldConfig&gt;</td><td><code>getFieldConfig(name)</code>: 項目名完全一致で検索 ／ <code>getMaskingFieldNames()</code>: 項目名一覧（未使用）</td></tr>
+    <tr><td>FieldConfig</td><td>name: String, maskingType: MaskingType, length: Integer, value: String</td><td>-</td></tr>
+    <tr><td>MaskingType</td><td colspan="2">RANDOM_STRING, PHONE, EMAIL, FIRST_NAME, LAST_NAME, ADDRESS, COMPANY_NAME, FIXED_VALUE, NUMBER, DATE</td></tr>
+  </table></div>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s4">
+<h2>4. 処理フロー</h2>
+<h3>4.1 全体フロー（CLI / GUI 共通）</h3>
+<figure>
+<svg viewBox="0 0 860 300" width="860" role="img" aria-label="全体処理フロー">
+  <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs>
+  <rect x="10" y="40" width="130" height="50" rx="25" class="box hl"/><text x="75" y="70" text-anchor="middle" class="title">開始</text>
+  <rect x="170" y="40" width="150" height="50" rx="6" class="box"/><text x="245" y="62" text-anchor="middle" class="title">設定読込・検証</text><text x="245" y="80" text-anchor="middle" class="small">ConfigLoader</text>
+  <rect x="350" y="40" width="150" height="50" rx="6" class="box"/><text x="425" y="62" text-anchor="middle" class="title">オブジェクト設定取得</text><text x="425" y="80" text-anchor="middle" class="small">getObjectConfig</text>
+  <rect x="530" y="40" width="150" height="50" rx="6" class="box"/><text x="605" y="62" text-anchor="middle" class="title">CSV 読込＋マスキング</text><text x="605" y="80" text-anchor="middle" class="small">readAndMaskCsv</text>
+  <polygon points="770,30 840,65 770,100 700,65" class="box"/><text x="770" y="62" text-anchor="middle" class="small">モード</text><text x="770" y="76" text-anchor="middle" class="small">判定</text>
+  <path d="M140,65 L170,65" class="ln" marker-end="url(#a3)"/>
+  <path d="M320,65 L350,65" class="ln" marker-end="url(#a3)"/>
+  <path d="M500,65 L530,65" class="ln" marker-end="url(#a3)"/>
+  <path d="M680,65 L700,65" class="ln" marker-end="url(#a3)"/>
+
+  <rect x="120" y="180" width="180" height="56" rx="6" class="box"/><text x="210" y="204" text-anchor="middle" class="title">CSV 出力</text><text x="210" y="222" text-anchor="middle" class="small">writeMaskedCsv</text>
+  <rect x="340" y="180" width="200" height="56" rx="6" class="box"/><text x="440" y="204" text-anchor="middle" class="title">接続 → Insert</text><text x="440" y="222" text-anchor="middle" class="small">connect / insertRecords</text>
+  <rect x="580" y="180" width="200" height="56" rx="6" class="box"/><text x="680" y="204" text-anchor="middle" class="title">接続 → Upsert</text><text x="680" y="222" text-anchor="middle" class="small">connect / upsertRecords</text>
+  <path d="M770,100 L770,140 L210,140 L210,180" class="ln" marker-end="url(#a3)"/>
+  <path d="M440,140 L440,180" class="ln" marker-end="url(#a3)"/>
+  <path d="M680,140 L680,180" class="ln" marker-end="url(#a3)"/>
+  <text x="218" y="134" class="small">mask-only</text><text x="448" y="134" class="small">mask-insert</text><text x="688" y="134" class="small">mask-upsert</text>
+  <rect x="360" y="262" width="160" height="34" rx="17" class="box hl"/><text x="440" y="284" text-anchor="middle" class="title">終了（disconnect）</text>
+  <path d="M210,236 L210,279 L360,279" class="ln" marker-end="url(#a3)"/>
+  <path d="M440,236 L440,262" class="ln" marker-end="url(#a3)"/>
+  <path d="M680,236 L680,279 L520,279" class="ln" marker-end="url(#a3)"/>
+  <text x="245" y="112" text-anchor="middle" class="small">NG → 異常終了</text>
+  <text x="425" y="112" text-anchor="middle" class="small">null → 異常終了</text>
+  <text x="605" y="112" text-anchor="middle" class="small">0 件 → 終了</text>
+</svg>
+<figcaption>図3 全体処理フロー</figcaption>
+</figure>
+
+<h3>4.2 シーケンス（GUI・mask-upsert）</h3>
+<figure>
+<svg viewBox="0 0 900 520" width="900" role="img" aria-label="GUI Upsert シーケンス図">
+  <defs><marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs>
+  <g>
+    <rect x="10" y="10" width="110" height="36" rx="4" class="box"/><text x="65" y="33" text-anchor="middle" class="title">利用者</text>
+    <rect x="140" y="10" width="140" height="36" rx="4" class="box hl"/><text x="210" y="33" text-anchor="middle" class="title">MainController</text>
+    <rect x="300" y="10" width="120" height="36" rx="4" class="box"/><text x="360" y="33" text-anchor="middle" class="title">Task(別スレッド)</text>
+    <rect x="440" y="10" width="120" height="36" rx="4" class="box"/><text x="500" y="33" text-anchor="middle" class="title">CsvProcessor</text>
+    <rect x="580" y="10" width="140" height="36" rx="4" class="box"/><text x="650" y="33" text-anchor="middle" class="title">MaskingDataGen.</text>
+    <rect x="740" y="10" width="150" height="36" rx="4" class="box"/><text x="815" y="33" text-anchor="middle" class="title">SalesforceConn.</text>
+  </g>
+  <line x1="65" y1="46" x2="65" y2="510" class="life"/>
+  <line x1="210" y1="46" x2="210" y2="510" class="life"/>
+  <line x1="360" y1="46" x2="360" y2="510" class="life"/>
+  <line x1="500" y1="46" x2="500" y2="510" class="life"/>
+  <line x1="650" y1="46" x2="650" y2="510" class="life"/>
+  <line x1="815" y1="46" x2="815" y2="510" class="life"/>
+
+  <path d="M65,72 L205,72" class="ln" marker-end="url(#a4)"/><text x="135" y="66" text-anchor="middle" class="small">「読み込み」</text>
+  <text x="218" y="92" class="small">loadMaskingConfig() → コンボ更新</text>
+  <path d="M65,120 L205,120" class="ln" marker-end="url(#a4)"/><text x="135" y="114" text-anchor="middle" class="small">「実行」</text>
+  <text x="218" y="138" class="small">onExecute(): 入力チェック</text>
+  <path d="M210,165 L355,165" class="ln" marker-end="url(#a4)"/><text x="282" y="159" text-anchor="middle" class="small">new Thread(task).start()</text>
+  <rect x="354" y="160" width="12" height="320" class="act"/>
+  <path d="M366,195 L495,195" class="ln" marker-end="url(#a4)"/><text x="430" y="189" text-anchor="middle" class="small">readAndMaskCsv</text>
+  <rect x="494" y="195" width="12" height="80" class="act"/>
+  <path d="M506,220 L645,220" class="ln" marker-end="url(#a4)"/><text x="575" y="214" text-anchor="middle" class="small">generateMaskedValue ×(行×対象列)</text>
+  <path d="M645,240 L506,240" class="ln dash" marker-end="url(#a4)"/><text x="575" y="256" text-anchor="middle" class="small">ダミー値</text>
+  <path d="M494,275 L366,275" class="ln dash" marker-end="url(#a4)"/><text x="430" y="290" text-anchor="middle" class="small">List&lt;Map&gt;</text>
+  <path d="M354,300 L215,300" class="ln dash" marker-end="url(#a4)"/><text x="282" y="294" text-anchor="middle" class="small">updateProgress(50)</text>
+  <text x="372" y="318" class="small">loadSalesforceConfig()</text>
+  <path d="M366,340 L810,340" class="ln" marker-end="url(#a4)"/><text x="590" y="334" text-anchor="middle" class="small">connect()</text>
+  <path d="M366,375 L810,375" class="ln" marker-end="url(#a4)"/><text x="590" y="369" text-anchor="middle" class="small">upsertRecords(obj, records, extId)</text>
+  <rect x="809" y="375" width="12" height="60" class="act"/>
+  <text x="800" y="400" text-anchor="end" class="small">batchSize 件ごとに</text><text x="800" y="414" text-anchor="end" class="small">connection.upsert()</text>
+  <path d="M809,435 L366,435" class="ln dash" marker-end="url(#a4)"/><text x="590" y="429" text-anchor="middle" class="small">List&lt;UpsertResult&gt;（未評価）</text>
+  <path d="M366,458 L810,458" class="ln" marker-end="url(#a4)"/><text x="590" y="452" text-anchor="middle" class="small">disconnect()（finally）</text>
+  <path d="M354,480 L215,480" class="ln dash" marker-end="url(#a4)"/><text x="282" y="474" text-anchor="middle" class="small">succeeded()</text>
+  <path d="M205,500 L70,500" class="ln dash" marker-end="url(#a4)"/><text x="135" y="494" text-anchor="middle" class="small">完了ダイアログ</text>
+</svg>
+<figcaption>図4 GUI からの Upsert 実行シーケンス</figcaption>
+</figure>
+</section>
+
+<!-- ============================================================ -->
+<section id="s5">
+<h2>5. 画面設計</h2>
+<p>画面は main.fxml による単一画面（VBox、余白 15px）。ウィンドウ初期サイズ 900×700、最小 800×600。</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>セクション</th><th>項目</th><th>fx:id</th><th>種別</th><th>初期値 / 備考</th><th>イベント</th></tr></thead>
+<tbody>
+<tr><td rowspan="2">設定ファイル</td><td>マスキング設定</td><td>txtMaskingConfig</td><td>TextField + ボタン 2</td><td><code>masking-config.yml</code></td><td>参照... → onBrowseMaskingConfig ／ 読み込み → onLoadMaskingConfig</td></tr>
+<tr><td>Salesforce 設定</td><td>txtSalesforceConfig</td><td>TextField + ボタン</td><td><code>salesforce.properties</code></td><td>参照... → onBrowseSalesforceConfig</td></tr>
+<tr><td rowspan="4">データ投入設定</td><td>入力 CSV ファイル</td><td>txtInputCsv</td><td>TextField + ボタン</td><td>空</td><td>参照... → onBrowseInputCsv</td></tr>
+<tr><td>オブジェクト名</td><td>cmbObjectName</td><td>ComboBox</td><td>設定読込後に YAML の objects[].name を設定</td><td>-</td></tr>
+<tr><td>処理モード</td><td>cmbProcessMode</td><td>ComboBox</td><td>「mask-only (マスキングのみ)」「mask-insert (Insert)」「mask-upsert (Upsert)」、先頭選択</td><td>選択変更で外部 ID 欄の有効／無効切替</td></tr>
+<tr><td>外部 ID 項目</td><td>txtExternalIdField</td><td>TextField</td><td>無効状態。Upsert 選択時のみ有効</td><td>-</td></tr>
+<tr><td rowspan="3">実行</td><td>実行ボタン</td><td>btnExecute</td><td>Button 150×40</td><td>実行中は無効化</td><td>onExecute</td></tr>
+<tr><td>ステータス</td><td>lblStatus</td><td>Label</td><td>「待機中...」。実行時は Task メッセージにバインド</td><td>-</td></tr>
+<tr><td>進捗</td><td>progressBar</td><td>ProgressBar</td><td>0。実行時は Task 進捗にバインド</td><td>-</td></tr>
+<tr><td>実行ログ</td><td>ログ</td><td>txtLog</td><td>TextArea（読取専用・折返し）</td><td>タイムスタンプ付き追記</td><td>クリア → onClearLog</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s6">
+<h2>6. 入出力設計</h2>
+
+<h3 id="s6-1">6.1 マスキング設定ファイル（YAML）</h3>
+<div class="table-wrap"><table>
+<tr><th>キー</th><th>必須</th><th>型</th><th>説明</th></tr>
+<tr><td><code>objects</code></td><td class="c">○</td><td>配列</td><td>オブジェクト設定のリスト（1 件以上）</td></tr>
+<tr><td><code>objects[].name</code></td><td class="c">○</td><td>文字列</td><td>Salesforce オブジェクト API 名（CLI 引数／画面選択値と完全一致）</td></tr>
+<tr><td><code>objects[].fields</code></td><td class="c">△</td><td>配列</td><td>マスキング項目のリスト（未定義時は WARN、マスキングなしで処理）</td></tr>
+<tr><td><code>fields[].name</code></td><td class="c">○</td><td>文字列</td><td>CSV ヘッダー名（＝ Salesforce 項目 API 名）</td></tr>
+<tr><td><code>fields[].maskingType</code></td><td class="c">○</td><td>列挙</td><td><a href="#s7">7 章</a>のいずれか（不正値は YAML 読込時例外）</td></tr>
+<tr><td><code>fields[].length</code></td><td class="c">-</td><td>整数</td><td>RANDOM_STRING の文字数（既定 20）、NUMBER の最大桁数（既定 10）</td></tr>
+<tr><td><code>fields[].value</code></td><td class="c">-</td><td>文字列</td><td>FIXED_VALUE の固定値</td></tr>
+</table></div>
+<pre><code>objects:
+  - name: Account
+    fields:
+      - name: Name
+        maskingType: RANDOM_STRING
+        length: 20
+      - name: Phone
+        maskingType: PHONE</code></pre>
+
+<h3 id="s6-2">6.2 入力 CSV / 出力 CSV</h3>
+<div class="table-wrap"><table>
+<tr><th>項目</th><th>入力 CSV</th><th>出力 CSV（mask-only）</th></tr>
+<tr><td>形式</td><td>OpenCSV 既定（カンマ区切り、ダブルクォート囲み可）</td><td>OpenCSV 既定（全値をダブルクォートで囲む）</td></tr>
+<tr><td>ヘッダー</td><td>1 行目必須。値は Salesforce 項目 API 名</td><td>先頭レコードの Map キー順（HashMap のため入力順は保証されない）</td></tr>
+<tr><td>文字コード</td><td colspan="2">FileReader / FileWriter 使用のため JVM 既定文字コードに依存</td></tr>
+<tr><td>ファイル名</td><td>任意（CLI 引数 / 画面指定）</td><td><code>{オブジェクト名}_masked_{エポックミリ秒}.csv</code>（カレントディレクトリ）</td></tr>
+</table></div>
+
+<h3 id="s6-3">6.3 Salesforce 接続設定（properties）</h3>
+<div class="table-wrap"><table>
+<tr><th>キー</th><th>必須</th><th>既定値</th><th>説明</th></tr>
+<tr><td><code>sf.username</code></td><td class="c">○</td><td>-</td><td>ログインユーザ名</td></tr>
+<tr><td><code>sf.password</code></td><td class="c">○</td><td>-</td><td>パスワード</td></tr>
+<tr><td><code>sf.securityToken</code></td><td class="c">-</td><td>空文字</td><td>パスワード末尾に連結して送信</td></tr>
+<tr><td><code>sf.loginUrl</code></td><td class="c">-</td><td><code>https://login.salesforce.com/services/Soap/u/58.0</code></td><td>Sandbox は <code>test.salesforce.com</code></td></tr>
+<tr><td><code>sf.batchSize</code></td><td class="c">-</td><td>200</td><td>API 1 回あたりのレコード数（数値以外は NumberFormatException）</td></tr>
+</table></div>
+
+<h3 id="s6-4">6.4 CLI 引数</h3>
+<pre><code>java -cp target/data-masking-loader-1.0.0-jar-with-dependencies.jar \
+     com.salesforce.tools.DataMaskingLoader &lt;処理モード&gt; &lt;オブジェクト名&gt; &lt;CSVファイルパス&gt; [外部ID項目]</code></pre>
+<div class="table-wrap"><table>
+<tr><th>位置</th><th>名称</th><th>必須</th><th>説明</th></tr>
+<tr><td class="c">1</td><td>処理モード</td><td class="c">○</td><td>mask-only / mask-insert / mask-upsert（大文字小文字は区別しない）</td></tr>
+<tr><td class="c">2</td><td>オブジェクト名</td><td class="c">○</td><td>YAML の objects[].name と一致する値</td></tr>
+<tr><td class="c">3</td><td>CSV ファイルパス</td><td class="c">○</td><td>入力 CSV</td></tr>
+<tr><td class="c">4</td><td>外部 ID 項目</td><td class="c">-</td><td>mask-upsert でのみ使用。省略時 <code>Id</code></td></tr>
+</table></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s7">
+<h2>7. マスキング仕様</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>MaskingType</th><th>生成ロジック</th><th>パラメータ</th><th>出力例</th></tr></thead>
+<tbody>
+<tr><td>RANDOM_STRING</td><td><code>RandomStringUtils.randomAlphanumeric(length)</code></td><td>length（既定 20）</td><td>aZ3k9QwP0mLx7Rt2YbN1</td></tr>
+<tr><td>PHONE</td><td><code>"090-%04d-%04d"</code> に 0〜9999 の乱数 2 つ</td><td>-</td><td>090-0427-8815</td></tr>
+<tr><td>EMAIL</td><td><code>faker.internet().emailAddress()</code></td><td>-</td><td>(ロケール依存の文字列)@example 系ドメイン</td></tr>
+<tr><td>FIRST_NAME</td><td><code>faker.name().firstName()</code></td><td>-</td><td>翔太</td></tr>
+<tr><td>LAST_NAME</td><td><code>faker.name().lastName()</code></td><td>-</td><td>佐藤</td></tr>
+<tr><td>ADDRESS</td><td><code>faker.address().fullAddress()</code></td><td>-</td><td>ロケール依存の住所文字列</td></tr>
+<tr><td>COMPANY_NAME</td><td><code>faker.company().name()</code></td><td>-</td><td>ロケール依存の会社名</td></tr>
+<tr><td>FIXED_VALUE</td><td>設定値をそのまま返す</td><td>value（未設定時 null → Salesforce へは送信されない）</td><td>MASKED</td></tr>
+<tr><td>NUMBER</td><td><code>random.nextInt(10^length − 1)</code> を文字列化</td><td>length（既定 10）</td><td>48213</td></tr>
+<tr><td>DATE</td><td><code>faker.date().birthday()</code> を <code>yyyy-MM-dd</code> で整形（18〜65 歳相当）</td><td>-</td><td>1987-04-12</td></tr>
+</tbody>
+</table>
+</div>
+<p><b>共通仕様</b></p>
+<ul>
+  <li>元の値は参照せず、毎回独立した乱数で生成する（同一値に対する一貫性・再現性はない）。</li>
+  <li>元の値が空欄であっても、設定対象項目であればダミー値が設定される。</li>
+  <li>設定にない列は元の値をそのまま出力・投入する。</li>
+</ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="s8">
+<h2>8. エラー処理・ログ</h2>
+<h3>8.1 エラー処理方針</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>発生箇所</th><th>事象</th><th>CLI の挙動</th><th>GUI の挙動</th></tr></thead>
+<tbody>
+<tr><td>設定読込</td><td>ファイルなし／YAML 不正</td><td>ERROR ログ、終了コード 1</td><td>エラーダイアログ</td></tr>
+<tr><td>設定検証</td><td>必須項目欠落</td><td>ERROR ログ、終了コード 1</td><td>エラーダイアログ「設定ファイルの検証に失敗しました」</td></tr>
+<tr><td>CSV 読込</td><td>ファイルなし／CSV 不正</td><td>ERROR ログ、終了コード 1</td><td>Task 失敗 → エラーダイアログ</td></tr>
+<tr><td>マスキング生成</td><td>生成中例外</td><td colspan="2">ERROR ログ、当該項目値を null として継続</td></tr>
+<tr><td>Salesforce 接続</td><td>認証失敗・通信エラー</td><td>ERROR ログ、終了コード 1</td><td>Task 失敗 → エラーダイアログ</td></tr>
+<tr><td>Insert / Upsert</td><td>レコード単位エラー</td><td colspan="2">ERROR ログのみ。処理は継続し、正常終了として扱われる</td></tr>
+<tr><td>Insert / Upsert</td><td>ConnectionException</td><td colspan="2">以降のバッチを中断し例外伝播（それまでのバッチはコミット済み）</td></tr>
+</tbody>
+</table>
+</div>
+<h3>8.2 ログ設定（logback.xml）</h3>
+<div class="table-wrap"><table>
+<tr><th>Appender</th><th>出力先</th><th>ローテーション</th></tr>
+<tr><td>STDOUT</td><td>コンソール</td><td>-</td></tr>
+<tr><td>FILE</td><td><code>logs/data-masking-loader.log</code></td><td>日次（<code>data-masking-loader.yyyy-MM-dd.log</code>）、30 日保持</td></tr>
+</table></div>
+<p>書式: <code>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</code>。ルート INFO、<code>com.salesforce.tools</code> は DEBUG、<code>com.sforce</code> は WARN。DEBUG では項目ごとのマスキング結果（<code>項目マスキング: {項目} -&gt; {値}</code>）が出力される。</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="s9">
+<h2>9. 課題・改善提案</h2>
+<p>ソースコード解析の過程で確認された、仕様上の注意点および不具合の可能性がある箇所を示す。</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>No</th><th>重要度</th><th>箇所</th><th>内容</th><th>改善案</th></tr></thead>
+<tbody>
+<tr><td class="c">9.1</td><td><span class="sev high">高</span></td><td>pom.xml / ObjectConfig, MainController</td><td><code>Stream.toList()</code>（Java 16+）を使用し、JavaFX 21 は Java 17 以上が必要。一方 pom は source/target 11、README は「Java 11以上」と記載しており実際には Java 11 で動作しない</td><td><code>maven.compiler.release</code> を 17 にし、README の動作要件を Java 17 以上に修正</td></tr>
+<tr><td class="c">9.2</td><td><span class="sev high">高</span></td><td>README / pom.xml</td><td>JAR の Main-Class は GUI（DataMaskingApp）のため、README 記載の <code>java -jar ... mask-only Account accounts.csv</code> では CLI ではなく GUI が起動する</td><td>README の CLI 例を <code>java -cp &lt;jar&gt; com.salesforce.tools.DataMaskingLoader</code> に統一、または引数有無で振り分けるランチャーを用意</td></tr>
+<tr><td class="c">9.3</td><td><span class="sev high">高</span></td><td>SalesforceConnection / 呼出元</td><td>レコード単位の Insert/Upsert 失敗がログのみで、GUI は「正常に完了しました」と表示し、CLI も終了コード 0 になる</td><td>結果を集計し失敗件数を画面・終了コードに反映、失敗レコードを CSV 出力</td></tr>
+<tr><td class="c">9.4</td><td><span class="sev mid">中</span></td><td>CsvProcessor.writeMaskedCsv</td><td>レコードが HashMap のため出力 CSV の列順が入力と異なる</td><td>LinkedHashMap を使用、またはヘッダー配列を保持して出力</td></tr>
+<tr><td class="c">9.5</td><td><span class="sev mid">中</span></td><td>CsvProcessor</td><td>FileReader / FileWriter が JVM 既定文字コードを使用し、Windows（MS932 既定）で UTF-8 の日本語 CSV が文字化けする可能性</td><td><code>Files.newBufferedReader(path, UTF_8)</code> 等で文字コードを明示（BOM 対応も検討）</td></tr>
+<tr><td class="c">9.6</td><td><span class="sev mid">中</span></td><td>MainController.executeAsync</td><td>Task（バックグラウンドスレッド）内で ComboBox / TextField の値を参照しており、JavaFX のスレッドルールに反する</td><td>Task 生成前に UI スレッドで値を取得し、final 変数で渡す</td></tr>
+<tr><td class="c">9.7</td><td><span class="sev mid">中</span></td><td>SalesforceConnection.createSObject</td><td>空文字の値も setField されるため、数値・日付項目などの空欄で型エラーとなる可能性。Upsert 時は意図せず値をクリアする可能性もある</td><td>空文字をスキップ、または fieldsToNull で明示的に扱う</td></tr>
+<tr><td class="c">9.8</td><td><span class="sev mid">中</span></td><td>全体</td><td>全レコードをメモリに保持してから処理するため、大量データでメモリを圧迫する。DEBUG ログで全項目のマスキング値を出力するため、ログ量も大きい</td><td>ストリーミング処理（バッチ単位で読込→投入）、Bulk API の採用、既定ログレベルを INFO に</td></tr>
+<tr><td class="c">9.9</td><td><span class="sev low">低</span></td><td>ConfigLoader.loadConfig</td><td>FileInputStream がクローズされない。リフレクションによる SnakeYAML の版判定は 2.2 固定のため不要</td><td>try-with-resources と <code>new Constructor(MaskingConfig.class, new LoaderOptions())</code> の直接呼出しに置換</td></tr>
+<tr><td class="c">9.10</td><td><span class="sev low">低</span></td><td>ConfigLoader.validateConfig</td><td>FIXED_VALUE の value 未設定、length の範囲（NUMBER は 10 以上で int 上限に丸め）を検証していない</td><td>タイプ別の追加検証</td></tr>
+<tr><td class="c">9.11</td><td><span class="sev low">低</span></td><td>DataMaskingLoader / MainController</td><td>execute* と loadSalesforceConfig のロジックが重複</td><td>共通サービスクラス（例: MaskingService）へ抽出</td></tr>
+<tr><td class="c">9.12</td><td><span class="sev low">低</span></td><td>SalesforceConnection.disconnect</td><td><code>logout()</code> を呼ばずセッションが残る</td><td><code>connection.logout()</code> を呼ぶ</td></tr>
+<tr><td class="c">9.13</td><td><span class="sev low">低</span></td><td>セキュリティ</td><td>パスワード・トークンを平文 properties で保持（<code>salesforce.properties</code> は .gitignore 登録済み）</td><td>OS の資格情報ストア利用、OAuth（JWT Bearer 等）への移行</td></tr>
+<tr><td class="c">9.14</td><td><span class="sev low">低</span></td><td>テスト</td><td>単体テストが存在しない</td><td>MaskingDataGenerator・CsvProcessor・ConfigLoader の JUnit テストを追加</td></tr>
+<tr><td class="c">9.15</td><td><span class="sev low">低</span></td><td>未使用コード</td><td><code>CsvProcessor.readCsv</code>、<code>ObjectConfig.getMaskingFieldNames</code>、<code>MainController.currentCsvFile</code> が未使用</td><td>削除または活用</td></tr>
+</tbody>
+</table>
+</div>
+<div class="note">本書はリビジョン <span class="mono">a9821f3</span> 時点のソースコードから作成したもの。コード変更時は本書も合わせて更新すること。</div>
+</section>
+
+<footer>Salesforce Data Masking Loader プログラム設計書 ／ 作成日 2026-11-13</footer>
+</main>
+</div>
+<script>
+(function(){
+  var btn=document.getElementById('themeBtn');
+  if(!btn)return;
+  btn.addEventListener('click',function(){
+    var r=document.documentElement;
+    var cur=r.getAttribute('data-theme');
+    var dark=cur?cur==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;
+    r.setAttribute('data-theme',dark?'light':'dark');
+  });
+})();
+</script>
+</body>
+</html>
