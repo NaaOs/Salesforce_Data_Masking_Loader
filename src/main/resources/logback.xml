@@ -26,6 +26,7 @@
     </root>
 
     <!-- パッケージごとのログレベル -->
-    <logger name="com.salesforce.tools" level="DEBUG" />
+    <!-- 大量データ時のログ肥大化を防ぐため INFO（調査時のみ DEBUG に変更） -->
+    <logger name="com.salesforce.tools" level="INFO" />
     <logger name="com.sforce" level="WARN" />
 </configuration>
