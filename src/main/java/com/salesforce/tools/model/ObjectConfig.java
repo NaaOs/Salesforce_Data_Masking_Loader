@@ -37,16 +37,4 @@ public class ObjectConfig {
                 .findFirst()
                 .orElse(null);
     }
-
-    /**
-     * マスキング対象の項目名リストを取得
-     */
-    public List<String> getMaskingFieldNames() {
-        if (fields == null) {
-            return List.of();
-        }
-        return fields.stream()
-                .map(FieldConfig::getName)
-                .toList();
-    }
 }
